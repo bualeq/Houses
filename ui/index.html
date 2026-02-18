@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Creative Houses</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     CONTAINER PRINCIPAL (oculto por padrão)
+══════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+    <!-- JANELA DA UI -->
+    <div class="window" id="window">
+
+        <!-- ── HEADER ── -->
+        <div class="header" id="header">
+            <div class="header-left">
+                <div class="header-icon" id="headerIcon">🏠</div>
+                <div>
+                    <div class="header-title-row">
+                        <span class="header-title">Creative Houses</span>
+                        <span class="badge" id="modeBadge">PLAYER</span>
+                    </div>
+                    <span class="header-sub">Sistema de Habitação · FiveM</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="tab-switcher" id="tabSwitcher">
+                    <button class="tab-btn active" id="btnPlayer" onclick="switchView('player')">👤 Jogador</button>
+                    <button class="tab-btn"        id="btnAdmin"  onclick="switchView('admin')">🛡️ Admin</button>
+                </div>
+                <button class="close-btn" onclick="closeUI()">✕</button>
+            </div>
+        </div>
+
+        <!-- PLAYER INFO BAR -->
+        <div class="info-bar" id="infoBar">
+            <div class="info-bar-left">
+                <span class="info-avatar" id="infoAvatar">J</span>
+                <span class="info-name" id="infoName">João Silva · CID: ABC123</span>
+            </div>
+            <div class="info-bar-right" id="infoStats">
+                🏠 0 casas · 0 total
+            </div>
+        </div>
+
+        <!-- ── CONTEÚDO ── -->
+        <div class="content" id="content">
+
+            <!-- ════════════════════════════
+                 PAINEL DO JOGADOR
+            ════════════════════════════ -->
+            <div id="playerPanel" class="panel active">
+
+                <!-- Tabs Jogador -->
+                <div class="inner-tabs">
+                    <button class="inner-tab active" id="tabMyHouses"    onclick="playerTab('myhouses')">🏠 Minhas Casas</button>
+                    <button class="inner-tab"        id="tabAvailable"   onclick="playerTab('available')">🛒 Disponíveis</button>
+                </div>
+
+                <!-- Lista: Minhas Casas -->
+                <div id="listMyHouses" class="list-area">
+                    <div class="empty-state" id="emptyMyHouses">
+                        <div class="empty-icon">🏠</div>
+                        <p>Você não possui casas</p>
+                        <small>Veja as casas disponíveis para comprar</small>
+                        <button class="btn btn-amber mt-8" onclick="playerTab('available')">Ver Disponíveis</button>
+                    </div>
+                    <div id="myHousesList"></div>
+                </div>
+
+                <!-- Lista: Disponíveis -->
+                <div id="listAvailable" class="list-area hidden">
+                    <div class="empty-state hidden" id="emptyAvailable">
+                        <div class="empty-icon">🛒</div>
+                        <p>Nenhuma casa disponível</p>
+                        <small>Aguarde novas casas serem criadas</small>
+                    </div>
+                    <div id="availableList"></div>
+                </div>
+
+                <!-- Detalhe de uma casa (player) -->
+                <div id="houseDetail" class="hidden">
+                    <div class="detail-header">
+                        <button class="back-btn" onclick="backToList()">← Voltar</button>
+                        <span id="detailName" class="detail-title"></span>
+                        <span id="detailLockBadge" class="badge badge-danger">🔒 Trancada</span>
+                    </div>
+                    <div class="detail-grid" id="detailGrid"></div>
+                    <div class="section-box">
+                        <div class="section-title">⚡ Ações</div>
+                        <div class="actions-col" id="detailActions"></div>
+                    </div>
+                    <div class="section-box">
+                        <div class="section-title">👥 Moradores</div>
+                        <div id="detailMembers"></div>
+                    </div>
+                    <div class="section-box">
+                        <div class="section-title">📍 Coordenada de Entrada</div>
+                        <div class="coord-grid" id="detailEntryCoord"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════
+                 PAINEL DO ADMIN
+            ════════════════════════════ -->
+            <div id="adminPanel" class="panel hidden">
+
+                <!-- Tabs Admin -->
+                <div class="inner-tabs">
+                    <button class="inner-tab active" id="tabAdminHouses" onclick="adminTab('houses')">🏠 Gerenciar</button>
+                    <button class="inner-tab"        id="tabAdminCreate" onclick="adminTab('create')">➕ Nova Casa</button>
+                </div>
+
+                <!-- Gerenciar Casas -->
+                <div id="adminHousesPanel">
+                    <!-- Stats -->
+                    <div class="stats-row" id="adminStats">
+                        <div class="stat-box">
+                            <span class="stat-num" id="statTotal">0</span>
+                            <span class="stat-label">Total</span>
+                        </div>
+                        <div class="stat-box green">
+                            <span class="stat-num" id="statAvail">0</span>
+                            <span class="stat-label">Disponíveis</span>
+                        </div>
+                        <div class="stat-box blue">
+                            <span class="stat-num" id="statOccup">0</span>
+                            <span class="stat-label">Ocupadas</span>
+                        </div>
+                    </div>
+                    <!-- Busca + filtro -->
+                    <div class="search-row">
+                        <input type="text" id="adminSearch" placeholder="🔍 Buscar por nome ou endereço..." oninput="renderAdminList()" />
+                        <div class="filter-btns">
+                            <button class="filter-btn active" data-filter="all"       onclick="setFilter('all',this)">Todas</button>
+                            <button class="filter-btn"        data-filter="available" onclick="setFilter('available',this)">Disp.</button>
+                            <button class="filter-btn"        data-filter="occupied"  onclick="setFilter('occupied',this)">Ocup.</button>
+                        </div>
+                    </div>
+                    <!-- Lista -->
+                    <div class="list-area" id="adminList"></div>
+
+                    <!-- Detalhe Admin -->
+                    <div id="adminDetail" class="hidden">
+                        <div class="detail-header">
+                            <button class="back-btn" onclick="backAdminList()">← Voltar</button>
+                            <span id="adminDetailName" class="detail-title"></span>
+                            <div style="display:flex;gap:6px;">
+                                <button class="btn btn-sm btn-blue"  onclick="openEditModal()">✏️ Editar</button>
+                                <button class="btn btn-sm btn-red"   onclick="openDeleteModal()">🗑️ Excluir</button>
+                            </div>
+                        </div>
+                        <div class="detail-grid" id="adminDetailGrid"></div>
+
+                        <!-- Proprietário / Aviso sem dono -->
+                        <div id="adminDetailOwner"></div>
+
+                        <!-- Ações admin -->
+                        <div class="section-box">
+                            <div class="section-title">⚡ Ações Admin</div>
+                            <div class="actions-col" id="adminDetailActions"></div>
+                        </div>
+
+                        <!-- Moradores -->
+                        <div class="section-box">
+                            <div class="section-title">👥 Moradores</div>
+                            <div id="adminDetailMembers"></div>
+                        </div>
+
+                        <!-- PolyZone -->
+                        <div class="section-box">
+                            <div class="section-title">🗺️ PolyZone</div>
+                            <div id="adminDetailPolyzone"></div>
+                            <div class="section-title mt-8">📍 Coordenada de Entrada</div>
+                            <div class="coord-grid" id="adminDetailEntry"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Criar Nova Casa -->
+                <div id="adminCreatePanel" class="hidden">
+                    <div class="form-scroll">
+                        <div class="form-info-box">➕ Preencha os dados para criar uma nova casa</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nome da Casa *</label>
+                                <input type="text" id="fName" placeholder="Ex: Casa Sunrise" />
+                            </div>
+                            <div class="form-group">
+                                <label>Endereço *</label>
+                                <input type="text" id="fAddress" placeholder="Ex: Rua Vinewood, 112" />
+                            </div>
+                            <div class="form-group">
+                                <label>Preço (R$) *</label>
+                                <input type="number" id="fPrice" placeholder="350000" />
+                            </div>
+                            <div class="form-group">
+                                <label>Taxa Mensal (R$) *</label>
+                                <input type="number" id="fTax" placeholder="5000" />
+                            </div>
+                            <div class="form-group">
+                                <label>Vencimento</label>
+                                <input type="date" id="fDueDate" />
+                            </div>
+                        </div>
+
+                        <div class="sub-box">
+                            <div class="sub-title">📍 Coordenada de Entrada *</div>
+                            <div class="coord-form-row">
+                                <div class="form-group" style="grid-column: span 3;"><label>Coordenada (X, Y, Z)</label><input type="text" id="fEntryCoord" placeholder="123.4, -456.7, 78.9" /></div>
+                                <div class="form-group"><label>Heading°</label><input type="number" id="fEntryH" placeholder="0.0" step="0.1" /></div>
+                            </div>
+                        </div>
+
+                        <div class="sub-box">
+                            <div class="sub-title-row">
+                                <span class="sub-title">🗺️ Pontos PolyZone *</span>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="btn btn-sm btn-red" onclick="addPolyPoint()">+ Ponto</button>
+                                    <button class="btn btn-sm btn-gray" onclick="removePolyPoint()">- Remover</button>
+                                </div>
+                            </div>
+                            <div id="polyPointsCreate"></div>
+                            <small class="hint">Mínimo 3 pontos. Quem não estiver cadastrado será teleportado para a entrada.</small>
+                        </div>
+
+                        <button class="btn btn-red btn-full" onclick="createHouse()">➕ Criar Casa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <div class="footer">
+            <div class="footer-left">
+                <span class="dot-online"></span>
+                <span>Servidor Online</span>
+            </div>
+            <div class="footer-right" id="footerStats">
+                🏠 0 ocupadas · ✅ 0 disponíveis · 🔒 0 trancadas
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MODAIS
+═══════════════════════════════════ -->
+
+<!-- Modal Comprar Casa -->
+<div id="modalBuy" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header"><span>🏠 Comprar Casa</span><button onclick="closeModal('modalBuy')">✕</button></div>
+        <div class="modal-body">
+            <div class="modal-price-box">
+                <p id="modalBuyName" class="modal-house-name"></p>
+                <p class="modal-price" id="modalBuyPrice">R$ 0</p>
+                <small id="modalBuyTax"></small>
+            </div>
+            <p class="modal-confirm-text">Confirma a compra desta casa?</p>
+            <div class="modal-btns">
+                <button class="btn btn-gray" onclick="closeModal('modalBuy')">Cancelar</button>
+                <button class="btn btn-green" onclick="confirmBuy()">Confirmar Compra</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Pagar Taxa -->
+<div id="modalTax" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header"><span>💳 Pagar Taxa</span><button onclick="closeModal('modalTax')">✕</button></div>
+        <div class="modal-body">
+            <div class="modal-price-box amber">
+                <p class="modal-label">Valor da Taxa</p>
+                <p class="modal-price" id="modalTaxValue">R$ 0</p>
+                <small id="modalTaxDue"></small>
+            </div>
+            <p class="modal-confirm-text">Deseja pagar a taxa da casa?</p>
+            <div class="modal-btns">
+                <button class="btn btn-gray" onclick="closeModal('modalTax')">Cancelar</button>
+                <button class="btn btn-amber" onclick="confirmTax()">Confirmar Pagamento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Morador (player) -->
+<div id="modalAddMember" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header"><span>👤 Adicionar Morador</span><button onclick="closeModal('modalAddMember')">✕</button></div>
+        <div class="modal-body">
+            <div class="form-group"><label>Nome do Jogador</label><input type="text" id="addMemberName" placeholder="Ex: João Silva" /></div>
+            <div class="form-group"><label>Citizen ID</label><input type="text" id="addMemberCid" placeholder="Ex: ABC123" /></div>
+            <div class="info-box blue">ℹ️ O morador terá acesso à casa mas não poderá gerenciá-la.</div>
+            <div class="modal-btns">
+                <button class="btn btn-gray" onclick="closeModal('modalAddMember')">Cancelar</button>
+                <button class="btn btn-blue" onclick="confirmAddMember()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit (admin) -->
+<div id="modalEdit" class="modal-overlay hidden">
+    <div class="modal modal-lg">
+        <div class="modal-header"><span>✏️ Editar Casa</span><button onclick="closeModal('modalEdit')">✕</button></div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="form-group"><label>Nome *</label><input type="text" id="eName" /></div>
+                <div class="form-group"><label>Endereço *</label><input type="text" id="eAddress" /></div>
+                <div class="form-group"><label>Preço (R$) *</label><input type="number" id="ePrice" /></div>
+                <div class="form-group"><label>Taxa (R$) *</label><input type="number" id="eTax" /></div>
+                <div class="form-group"><label>Vencimento</label><input type="date" id="eDueDate" /></div>
+            </div>
+                    <div class="sub-box">
+                        <div class="sub-title">📍 Coordenada de Entrada</div>
+                        <div class="coord-form-row">
+                            <div class="form-group" style="grid-column: span 3;"><label>Coordenada (X, Y, Z)</label><input type="text" id="eEntryCoord" placeholder="123.4, -456.7, 78.9" /></div>
+                            <div class="form-group"><label>Heading°</label><input type="number" id="eEntryH" step="0.1" /></div>
+                        </div>
+                    </div>
+            <div class="sub-box">
+                <div class="sub-title">🗺️ Pontos PolyZone</div>
+                <div id="polyPointsEdit"></div>
+            </div>
+            <div class="modal-btns">
+                <button class="btn btn-gray" onclick="closeModal('modalEdit')">Cancelar</button>
+                <button class="btn btn-red" onclick="confirmEdit()">💾 Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Excluir (admin) -->
+<div id="modalDelete" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header"><span>🗑️ Excluir Casa</span><button onclick="closeModal('modalDelete')">✕</button></div>
+        <div class="modal-body">
+            <div class="warn-box">
+                <div class="warn-icon">⚠️</div>
+                <p id="deleteTargetName" class="warn-name"></p>
+                <small>Esta ação não pode ser desfeita!</small>
+            </div>
+            <div class="modal-btns">
+                <button class="btn btn-gray" onclick="closeModal('modalDelete')">Cancelar</button>
+                <button class="btn btn-red" onclick="confirmDelete()">Confirmar Exclusão</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Admin Add Member / Set Owner -->
+<div id="modalAdminAddMember" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header"><span id="adminAddModalTitle">👤 Adicionar Pessoa (Admin)</span><button onclick="closeModal('modalAdminAddMember')">✕</button></div>
+        <div class="modal-body">
+            <div class="form-group"><label>Nome do Jogador</label><input type="text" id="adminAddName" placeholder="Ex: João Silva" /></div>
+            <div class="form-group"><label>Citizen ID</label><input type="text" id="adminAddCid" placeholder="Ex: ABC123" /></div>
+            
+            <!-- Seletor de Cargo -->
+            <div class="form-group">
+                <label>Cargo na Casa</label>
+                <div class="role-selector">
+                    <button class="role-btn role-btn-active-blue" id="adminRoleTenant" onclick="selectAdminRole('tenant')">
+                        🏠 Morador
+                    </button>
+                    <button class="role-btn" id="adminRoleOwner" onclick="selectAdminRole('owner')">
+                        👑 Dono
+                    </button>
+                </div>
+            </div>
+
+            <!-- Aviso dinâmico -->
+            <div id="adminRoleWarning"></div>
+
+            <div class="modal-btns">
+                <button class="btn btn-gray" onclick="closeModal('modalAdminAddMember')">Cancelar</button>
+                <button class="btn btn-red" id="adminAddConfirmBtn" onclick="confirmAdminAddMember()">👤 Adicionar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
